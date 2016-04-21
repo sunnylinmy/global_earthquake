@@ -44,7 +44,8 @@ path.area {
 
 div.tooltip {
     background: white;
-    text-align: center;
+    text-align: left;
+    padding-left: 5px;
     width: 300px;
     height: auto;
     font-size: 14px;
@@ -69,6 +70,9 @@ body{
 var width = 1200*1.4,
     height = 600*1.4;
 
+var scaleFactor = 1,
+    centered,
+    g;
 
 var svg = d3.select("body")
     .append("svg")
@@ -106,6 +110,32 @@ var monthNames = [
 var xLoc = 25,
     yLoc = 80,
     yDiff = 30 ;
+
+var zoomX = 30,
+    zoomY = 0.2*height,
+    zoomWidth = 60,
+    zoomHeight = 20,
+    bdx = 8;
+
+zoombutton = svg.append("rect")
+            .attr("x",zoomX)
+            .attr("y",zoomY)
+            .attr("width",zoomWidth)
+            .attr("height",zoomHeight)
+            .attr("fill","#ffeda0")
+            .attr("stroke-width",1.5)
+            .attr("rx",8)
+            .on("click",clickOut);
+
+svg.append("text")
+          .attr("x",zoomX+bdx)
+          .attr("y",zoomY+zoomHeight/2)
+          .attr("fill","black")
+          .attr("text-anchor","start")
+          .attr("font-size","10")
+          .style("pointer-events",'none')
+          .style("-webkit-user-select","none")
+          .text("Zoom Out");
 
 
 d3.json("world-220m_withoutAntarctica.json",function(topo){
@@ -152,15 +182,16 @@ d3.json("world-220m_withoutAntarctica.json",function(topo){
       maxDeath = deathData[deathData.length-1];
 
 
-      var radius = d3.scale.linear().domain([minDeath,maxDeath]).range([5,20]);
+      var radius = d3.scale.linear().domain([minDeath,maxDeath]).range([4,35]);
 
       // Order to make sure the smallest is on the top
       function order(a,b){
         return radius(a) - radius(b);
       }
 
+     g = svg.append("g");
 
-      countries = svg.append("g")
+       g.append("g")
         .attr("class","region")
         .selectAll("path")
         .data(geoData.features)
@@ -172,9 +203,11 @@ d3.json("world-220m_withoutAntarctica.json",function(topo){
                   return d.id;})
         .attr("stroke","black")
         .attr("stroke-width", 0.5)
-        .style("opacity",1) ;
+        .style("opacity",1)
+        .on("dblclick",clicked);
 
-     svg.selectAll("circle").data(data)
+
+        g.selectAll("circle").data(data)
           .enter()
           .append("circle")
          .attr("cx", function(d) {
@@ -200,25 +233,65 @@ d3.json("world-220m_withoutAntarctica.json",function(topo){
                 +"Comments: "+ d.Comments +"</p>")
 
           .style("left",(d3.event.pageX)+"px")
-          .style("top",(d3.event.pageY-30) +"px");
+          .style("top",(d3.event.pageY+30) +"px");
           }).on("mouseout",function(){
 
-        d3.select(this)
-          .transition()
-          .duration(300)
-          .style("opacity",1)
-          .attr("fill","red");
+               d3.select(this)
+                  .transition()
+                  .duration(300)
+                  .style("opacity",1)
+                  .attr("fill","red");
 
-       div.transition()
-              .duration(300)
-              .style("opacity", 0);
+              div.transition()
+                  .duration(300)
+                  .style("opacity", 0);
 
-     });
+          }).on("dblclick",clicked);
          
     });
 });
 
 function DEATH(d) {return +d.Death;};
+
+// Click function for zooming in on double clicked area
+function clicked(d) {
+  var x, y;
+  var mousePos = d3.mouse(this) ;
+
+  if (d) {
+    x = mousePos[0] ;
+    y = mousePos[1] ;
+    scaleFactor *= 2 ;
+    scaleFactor = Math.min(scaleFactor,32) ;
+  } else {
+    x = width / 2;
+    y = height / 2;
+    scaleFactor = 1 ;
+  }
+
+  // This is for coloring the clicked states
+  g.selectAll("path")
+    .classed("active", centered && function(d) { return d === centered; });
+
+  g.transition()
+    .duration(750)
+    .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")scale(" + scaleFactor + ")translate(" + -x + "," + -y + ")")
+    .style("stroke-width", 1.25 / scaleFactor + "px");
+};
+
+// Zoom out to the original view
+function clickOut() {
+  var x, y;
+
+  x = width / 2;
+  y = height / 2;
+  scaleFactor = 1;
+
+  g.transition()
+    .duration(750)
+    .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")scale(" + scaleFactor + ")translate(" + -x + "," + -y + ")")
+    .style("stroke-width", 1.5 / scaleFactor + "px");
+}
 
 
 </script>
