@@ -1,16 +1,18 @@
 <meta charset="utf-8">
+<head>
+<link href="https://fonts.googleapis.com/css?family=Roboto" rel="stylesheet" type="text/css">
+<title>Earthquakes with 1,000 or More Deaths 1900-2014</title>
 <style type="text/css">
   .text {
-    font-family: "Helvetica Neue", sans-serif;
-    font-weight:100 ;
+    font-family: "Roboto", sans-serif;
     fill: #ddd;
-
     -webkit-touch-callout: none;
     -webkit-user-select: none;
     -khtml-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
+    font-size: 1px;
   }
 
   .yearText {
@@ -19,13 +21,6 @@
 
   .monthText {
       font-size: 30px ;
-  }
-
-  .buttonText {
-    font-size: 14px ;
-    fill: white;
-    font-family: sans-serif;
-    font-weight: 300 ;
   }
 
   .button {
@@ -46,7 +41,8 @@ div.tooltip {
     background: white;
     text-align: left;
     padding-left: 5px;
-    width: 300px;
+    width: auto;
+    max-width: 700px;
     height: auto;
     font-size: 14px;
     border:solid gray;
@@ -58,27 +54,103 @@ div.tooltip {
 
 body{
   line-height: 1.5;
+  font-family: "Roboto", sans-serif;
 }
 
+h1{
+  text-align: center;
+}
+
+svg{
+  margin-left: auto;
+  margin-right: auto;
+  display: block;
+}
+
+.subunit-label{
+  fill: #777;
+  fill-opacity: .5;
+  font-size: 4px;
+  text-anchor: middle;
+}
+
+.pace {
+  -webkit-pointer-events: none;
+  pointer-events: none;
+
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+
+  z-index: 2000;
+  position: fixed;
+  margin: auto;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 5px;
+  width: 200px;
+  background: #fff;
+  border: 1px solid #b62222;
+
+  overflow: hidden;
+}
+
+.pace .pace-progress {
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  -ms-box-sizing: border-box;
+  -o-box-sizing: border-box;
+  box-sizing: border-box;
+
+  -webkit-transform: translate3d(0, 0, 0);
+  -moz-transform: translate3d(0, 0, 0);
+  -ms-transform: translate3d(0, 0, 0);
+  -o-transform: translate3d(0, 0, 0);
+  transform: translate3d(0, 0, 0);
+
+  max-width: 200px;
+  position: fixed;
+  z-index: 2000;
+  display: block;
+  position: absolute;
+  top: 0;
+  right: 100%;
+  height: 100%;
+  width: 100%;
+  background: #b62222;
+}
+
+.pace.pace-inactive {
+  display: none;
+}
+
+
 </style>
+</head>
 <body>
+<h1>Earthquakes with 1,000 or More Deaths 1900-2014</h1>
+<div class="container"></div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/1.6.19/topojson.min.js"></script>
 <script src="lib/d3.geo.projection.v0.min.js" charset="utf-8"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.0.2/pace.min.js"></script>
 <script>
 
-var width = 1200*1.4,
-    height = 600*1.4;
+var width = 1000*1.5,
+    height = 500*1.4;
 
 var scaleFactor = 1,
     centered,
-    g;
+    g,
+    zoombutton;
 
 var svg = d3.select("body")
     .append("svg")
     .attr("width", width)
     .attr("height", height)
-    .attr("visibility","visible")
+    .attr("visibility","hidden")
     .attr("id","mainsvg");
 
 
@@ -111,42 +183,16 @@ var xLoc = 25,
     yLoc = 80,
     yDiff = 30 ;
 
-var zoomX = 30,
-    zoomY = 0.2*height,
-    zoomWidth = 60,
-    zoomHeight = 20,
-    bdx = 8;
 
-zoombutton = svg.append("rect")
-            .attr("x",zoomX)
-            .attr("y",zoomY)
-            .attr("width",zoomWidth)
-            .attr("height",zoomHeight)
-            .attr("fill","#ffeda0")
-            .attr("stroke-width",1.5)
-            .attr("rx",8)
-            .on("click",clickOut);
-
-svg.append("text")
-          .attr("x",zoomX+bdx)
-          .attr("y",zoomY+zoomHeight/2)
-          .attr("fill","black")
-          .attr("text-anchor","start")
-          .attr("font-size","10")
-          .style("pointer-events",'none')
-          .style("-webkit-user-select","none")
-          .text("Zoom Out");
-
-
-d3.json("world-220m_withoutAntarctica.json",function(topo){
+d3.json("world_all_withoutAntarctica.json",function(topo){
 
     d3.csv("data.csv",function(error,data){
 
         geoData = topojson.feature(topo,topo.objects.countries) ;
 
-        proj = d3.geo.eckert3();
+        projection = d3.geo.eckert3();
 
-        path = d3.geo.path().projection(proj);
+        path = d3.geo.path().projection(projection);
 
       var center = d3.geo.centroid(geoData)
       var scale  = 250;
@@ -175,6 +221,7 @@ d3.json("world-220m_withoutAntarctica.json",function(topo){
         .center(center)
         .scale(scale*0.95)
         .translate(offset);
+
       path = path.projection(projection);
 
       deathData = data.map(DEATH).sort(d3.ascending);
@@ -184,10 +231,8 @@ d3.json("world-220m_withoutAntarctica.json",function(topo){
 
       var radius = d3.scale.linear().domain([minDeath,maxDeath]).range([4,35]);
 
-      // Order to make sure the smallest is on the top
-      function order(a,b){
-        return radius(a) - radius(b);
-      }
+      t = projection.translate(); // the projection's default translation
+      s = projection.scale() // the projection's default scale
 
      g = svg.append("g");
 
@@ -206,8 +251,45 @@ d3.json("world-220m_withoutAntarctica.json",function(topo){
         .style("opacity",1)
         .on("dblclick",clicked);
 
+        g.selectAll(".subunit_label")
+         .data(topojson.feature(topo,topo.objects.countries).features)
+         .enter()
+         .append("text")
+ //        .attr("class",function(d){ return "subunit-label" + d.properties.name;})
+         .attr("transform",function(d){
+            if (d.properties.name=="France"){
+                return "translate(" + (path.centroid(d)[0]+10)+","+(path.centroid(d)[1]-10) + ")";
+            }else if (d.properties.name=="United States"){
+                return "translate(" + (path.centroid(d)[0])+","+(path.centroid(d)[1]+20) + ")";
+            }else if (d.properties.name =="Canada"){
+                return "translate(" + (path.centroid(d)[0]-20)+","+(path.centroid(d)[1]+20) + ")";
+            }else{
+                return "translate(" + (path.centroid(d)[0]-10)+","+(path.centroid(d)[1]) + ")";
+            };
+          })
+         .attr("dy",".35em")
+         .style("opacity",function(d){
+              return path.area(d.geometry)*scaleFactor >100 ? 1:0;
+         })
+         .text(function(d) {return d.properties.name;})
+         .style("font-size",function(d){
 
-        g.selectAll("circle").data(data)
+          areaData = topojson.feature(topo,topo.objects.countries).features.map(AREA).sort(d3.ascending);
+          minArea = areaData[0];
+          maxArea = areaData[areaData.length-1];
+
+              var fontsizeDeceiver = d3.scale.linear().domain([minArea,maxArea]).range([5,20]);
+              return fontsizeDeceiver(path.area(d.geometry));
+              //return path.area(d.geometry) > 10000 ? "20px" : "5px";
+         })
+         .style("pointer-events","none");
+
+      // Order to make sure the smallest is on the top
+      function order(a,b){
+        return radius(a) - radius(b);
+      };
+
+        g.append("g").selectAll("circle").data(data)
           .enter()
           .append("circle")
          .attr("cx", function(d) {
@@ -247,11 +329,45 @@ d3.json("world-220m_withoutAntarctica.json",function(topo){
                   .style("opacity", 0);
 
           }).on("dblclick",clicked);
+
+
+        var zoomX = 30,
+            zoomY = 0.1*height,
+            zoomWidth = 70,
+            zoomHeight = 20,
+            bdx = 5;
+
+          zoombutton = svg.append("g").append("rect")
+            .attr("x",zoomX)
+            .attr("y",zoomY)
+            .attr("width",zoomWidth)
+            .attr("height",zoomHeight)
+            .attr("fill","#ffeda0")
+            .attr("stroke-width",1.5)
+            .attr("rx",8)
+            .on("click",clickOut);
+
+          svg.append("text")
+          .attr("x",zoomX+bdx)
+          .attr("y",zoomY+zoomHeight*0.7)
+          .attr("fill","black")
+          .attr("text-anchor","start")
+          .attr("font-size","13")
+          .style("pointer-events",'none')
+          .style("-webkit-user-select","none")
+          .text("Zoom Out");
+
+                // Pace.stop() ;
+        Pace.on("done", function() {
+          svg.attr("visibility","visible") ;
+        })
          
     });
 });
 
 function DEATH(d) {return +d.Death;};
+
+function AREA(d){return +path.area(d.geometry);}
 
 // Click function for zooming in on double clicked area
 function clicked(d) {
@@ -277,6 +393,30 @@ function clicked(d) {
     .duration(750)
     .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")scale(" + scaleFactor + ")translate(" + -x + "," + -y + ")")
     .style("stroke-width", 1.25 / scaleFactor + "px");
+
+    console.log(t);
+  console.log(scaleFactor);
+
+ // var tx = t[0] * d3.event.scale + d3.event.translate[0];
+ // var ty = t[1] * d3.event.scale + d3.event.translate[1];
+ var tx = t[0]*scaleFactor;
+ var ty = t[1]*scaleFactor;
+  projection.translate([tx, ty]);
+
+
+  // now we determine the projection's new scale, but there's a problem:
+  // the map doesn't 'zoom onto the mouse point'
+  projection.scale(s * d3.event.scale);
+
+  svg.selectAll(".subunit-label")[0].forEach(function(d){
+    var data = d3.select(d).data()[0];
+    d3.select(d).attr("transform",function(d){return "translate(" + path.centroid(d)+ ")";})
+         .attr("dy",".35em")
+         .style("opacity",function(d){
+              return path.area(d.geometry)*scaleFactor >400 ? 1:0;
+         }).attr("font-size","5px");
+  });
+
 };
 
 // Zoom out to the original view
@@ -292,6 +432,7 @@ function clickOut() {
     .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")scale(" + scaleFactor + ")translate(" + -x + "," + -y + ")")
     .style("stroke-width", 1.5 / scaleFactor + "px");
 }
+
 
 
 </script>
