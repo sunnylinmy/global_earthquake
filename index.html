@@ -2,7 +2,7 @@
 <style type="text/css">
   .text {
     font-family: "Helvetica Neue", sans-serif;
-    font-weight: 500 ;
+    font-weight:100 ;
     fill: #ddd;
 
     -webkit-touch-callout: none;
@@ -32,58 +32,6 @@
     fill: red;
   }
 
-.pace {
-  -webkit-pointer-events: none;
-  pointer-events: none;
-
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  user-select: none;
-
-  z-index: 2000;
-  position: fixed;
-  margin: auto;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 5px;
-  width: 200px;
-  background: #fff;
-  border: 1px solid #1abe71;
-
-  overflow: hidden;
-}
-
-.pace .pace-progress {
-  -webkit-box-sizing: border-box;
-  -moz-box-sizing: border-box;
-  -ms-box-sizing: border-box;
-  -o-box-sizing: border-box;
-  box-sizing: border-box;
-
-  -webkit-transform: translate3d(0, 0, 0);
-  -moz-transform: translate3d(0, 0, 0);
-  -ms-transform: translate3d(0, 0, 0);
-  -o-transform: translate3d(0, 0, 0);
-  transform: translate3d(0, 0, 0);
-
-  max-width: 200px;
-  position: fixed;
-  z-index: 2000;
-  display: block;
-  position: absolute;
-  top: 0;
-  right: 100%;
-  height: 100%;
-  width: 100%;
-  background: #1abe71;
-}
-
-.pace.pace-inactive {
-  display: none;
-}
-
 path.line {
   fill: none;
   stroke: blue;
@@ -94,17 +42,36 @@ path.area {
   fill: #e7e7e7;
 }
 
+div.tooltip {
+    background: white;
+    text-align: center;
+    width: 300px;
+    height: auto;
+    font-size: 14px;
+    border:solid gray;
+    position: absolute;
+    border-radius: 8px;
+    border: 1px;
+    pointer-events: none;
+}
 
+body{
+  line-height: 1.0;
+}
+
+br{
+  line-height: 14px;
+}
 </style>
 <body>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.5/d3.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/1.6.19/topojson.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.0.2/pace.min.js"></script>
 <script src="lib/d3.geo.projection.v0.min.js" charset="utf-8"></script>
 <script>
 
-var width = 1200,
-    height = 900;
+var width = 1200*1.4,
+    height = 600*1.4;
+
 
 var svg = d3.select("body")
     .append("svg")
@@ -112,6 +79,11 @@ var svg = d3.select("body")
     .attr("height", height)
     .attr("visibility","visible")
     .attr("id","mainsvg");
+
+
+var div = d3.select("body").append("div")   
+  .attr("class", "tooltip")               
+  .style("opacity",0);
 
 var path, geoData, color, earthquakeData, projection, earthquake;
 
@@ -137,32 +109,11 @@ var monthNames = [
 var xLoc = 25,
     yLoc = 80,
     yDiff = 30 ;
-//var textYear = svg.append("text")
-//            .attr("x",xLoc)
-//            .attr("y",yLoc)
-//            .classed("yearText text",true)
-//            .text(startDate.getFullYear().toString());
 
-         //   .attr('visibility','hidden') ;
-//var textMonth = svg.append("text")
-//            .attr("x",xLoc)
-//            .attr("y",yLoc + yDiff)
-//            .classed("monthText text",true)
-//            .text(monthNames[startDate.getMonth()]);
-
-//var svg = d3.select("#map-container").attr("height",height);
-
-
-         //   .attr('visibility','hidden') ;
 
 d3.json("world-220m_withoutAntarctica.json",function(topo){
-      //topology = topo;
-      //geometries = topology.objects.countries.geometries;
 
     d3.csv("data.csv",function(error,data){
-
-    //    textYear.attr('visibility','visible') ;
-    //    textMonth.attr('visibility','visible') ;
 
         geoData = topojson.feature(topo,topo.objects.countries) ;
 
@@ -171,7 +122,7 @@ d3.json("world-220m_withoutAntarctica.json",function(topo){
         path = d3.geo.path().projection(proj);
 
       var center = d3.geo.centroid(geoData)
-      var scale  = 150;
+      var scale  = 250;
       var offset = [width/2, height/2];
       projection = d3.geo.eckert3()
         .scale(scale)
@@ -199,20 +150,20 @@ d3.json("world-220m_withoutAntarctica.json",function(topo){
         .translate(offset);
       path = path.projection(projection);
 
-      deathData = data.map(Death).sort(d3.ascending);
+      deathData = data.map(DEATH).sort(d3.ascending);
       minDeath = deathData[0];
       maxDeath = deathData[deathData.length-1];
-      console.log(deathData);
-//var sortedData = .sort(function(a,b){
-//        return d3.descending(val(a),val(b));
-//    })
 
-      var radius = d3.scale.linear().domain([minDeath,maxDeath]).range([1,20]);
-   //   console.log(Math.min(data.Death));
-    //  console.log(radius(data[1].Death));
-      console.log(radius(maxDeath));
 
-      svg.append("g")
+      var radius = d3.scale.linear().domain([minDeath,maxDeath]).range([5,20]);
+
+      // Order to make sure the smallest is on the top
+      function order(a,b){
+        return radius(a) - radius(b);
+      }
+
+
+      countries = svg.append("g")
         .attr("class","region")
         .selectAll("path")
         .data(geoData.features)
@@ -226,7 +177,7 @@ d3.json("world-220m_withoutAntarctica.json",function(topo){
         .attr("stroke-width", 0.5)
         .style("opacity",1) ;
 
-      svg.selectAll("circle").data(data)
+     svg.selectAll("circle").data(data)
           .enter()
           .append("circle")
          .attr("cx", function(d) {
@@ -235,43 +186,42 @@ d3.json("world-220m_withoutAntarctica.json",function(topo){
             .attr("cy", function(d) {
                 return projection([+d.Latitude, +d.Longitude])[1];
             })
-    //      .attr("r", 1)
           .style("fill", "red")
           .style("fill-opacity", 0.5)
           .style("stroke", "red")
           .style("stroke-opacity", 0.5)
-   //       .transition()
-   //       .duration(2000)
-   //       .ease(Math.sqrt)
           .attr("r", function(d){ return radius(d.Death);})
-   //       .style("fill-opacity", 1e-6)
-   //       .style("stroke-opacity", 1e-6)
-   //       .remove();
+          .sort(order)
+          .on("mouseover",function(d){
+          d3.select(this).transition().duration(300).style('opacity',1).attr("fill","#fee391");
 
+          div.transition().duration(300)
+          .style("opacity",1);
 
-//       svg.append("path")
-//          .datum(topojson.merge(topo, topo.objects.countries.geometries))
-//          .attr("d", path)
-//          .attr('fill', 'none')
-//          .attr("stroke-width", 2)
-//          .attr("stroke", "black");
+          div.html("<p>Death: "+ d3.round(d.Death,0)+"<br>"+"<p>Location: " + d.Location +"<br>"
+                +"<p>Magnitude: "+ d.Magnitude +"<br>"
+                +"<p>Comments: "+ d.Comments +"</p>")
 
+          .style("left",(d3.event.pageX)+"px")
+          .style("top",(d3.event.pageY-30) +"px");
+          }).on("mouseout",function(){
 
-    })
-})
+        d3.select(this)
+          .transition()
+          .duration(300)
+          .style("opacity",1)
+          .attr("fill","red");
 
-function filterJSON(json, key, value) {
-    var result = [];
-    for (var indicator in json) {
-        if (json[indicator][key] === value) {
-            result.push(json[indicator]);
-        }
-    }
-    return result;
-};
+       div.transition()
+              .duration(300)
+              .style("opacity", 0);
 
-function Death(d) {return +d.Death;};
+     });
+         
+    });
+});
 
+function DEATH(d) {return +d.Death;};
 
 
 </script>
