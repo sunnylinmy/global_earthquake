@@ -158,14 +158,14 @@ var div = d3.select("body").append("div")
   .attr("class", "tooltip")               
   .style("opacity",0);
 
-var path, geoData, color, earthquakeData, projection, earthquake;
+var path, geoData, color, earthquakeData, projection;
 
 //--------------------------------------
 // Date format from CSV file: "4/5/2006"
 var timeFormat = d3.time.format("%m/%d/%Y");
 
-var startDate = new Date(1902,2),
-    endDate   = new Date(2015,0) ;
+var startDate = new Date(1900,0),
+    endDate   = new Date(2014,12) ;
 
 var startNum = +startDate,
     endNum = +endDate ;
@@ -179,14 +179,21 @@ var monthNames = [
         "November", "December"
     ];
 
-var xLoc = 25,
-    yLoc = 80,
-    yDiff = 30 ;
+var zoomX = 30,
+    zoomY = 0.1*height,
+    startY = zoomY +30,
+    yearX = 30,
+    yearY = 0.9*height,
+    zoomWidth = 70,
+    zoomHeight = 20,
+    bdx = 5;
+
 
 
 d3.json("world_all_withoutAntarctica.json",function(topo){
+    d3.csv("data.csv",type,function(error,data){
 
-    d3.csv("data.csv",function(error,data){
+//        textYear.attr('visibility','visible') ;
 
         geoData = topojson.feature(topo,topo.objects.countries) ;
 
@@ -228,11 +235,7 @@ d3.json("world_all_withoutAntarctica.json",function(topo){
       minDeath = deathData[0];
       maxDeath = deathData[deathData.length-1];
 
-
       var radius = d3.scale.linear().domain([minDeath,maxDeath]).range([4,35]);
-
-      t = projection.translate(); // the projection's default translation
-      s = projection.scale() // the projection's default scale
 
      g = svg.append("g");
 
@@ -255,7 +258,6 @@ d3.json("world_all_withoutAntarctica.json",function(topo){
          .data(topojson.feature(topo,topo.objects.countries).features)
          .enter()
          .append("text")
- //        .attr("class",function(d){ return "subunit-label" + d.properties.name;})
          .attr("transform",function(d){
             if (d.properties.name=="France"){
                 return "translate(" + (path.centroid(d)[0]+10)+","+(path.centroid(d)[1]-10) + ")";
@@ -264,7 +266,7 @@ d3.json("world_all_withoutAntarctica.json",function(topo){
             }else if (d.properties.name =="Canada"){
                 return "translate(" + (path.centroid(d)[0]-20)+","+(path.centroid(d)[1]+20) + ")";
             }else{
-                return "translate(" + (path.centroid(d)[0]-10)+","+(path.centroid(d)[1]) + ")";
+                return "translate(" + (path.centroid(d)[0])+","+(path.centroid(d)[1]) + ")";
             };
           })
          .attr("dy",".35em")
@@ -277,10 +279,13 @@ d3.json("world_all_withoutAntarctica.json",function(topo){
           areaData = topojson.feature(topo,topo.objects.countries).features.map(AREA).sort(d3.ascending);
           minArea = areaData[0];
           maxArea = areaData[areaData.length-1];
-
-              var fontsizeDeceiver = d3.scale.linear().domain([minArea,maxArea]).range([5,20]);
+              if (path.area(d.geometry)>500){
+                var fontsizeDeceiver = d3.scale.linear().domain([minArea,maxArea]).range([5,20]);
               return fontsizeDeceiver(path.area(d.geometry));
-              //return path.area(d.geometry) > 10000 ? "20px" : "5px";
+            }else{
+              var fontsizeDeceiver = d3.scale.linear().domain([minArea,maxArea]).range([3,4]);
+              return fontsizeDeceiver(path.area(d.geometry));
+            }
          })
          .style("pointer-events","none");
 
@@ -289,9 +294,10 @@ d3.json("world_all_withoutAntarctica.json",function(topo){
         return radius(a) - radius(b);
       };
 
-        g.append("g").selectAll("circle").data(data)
+         quake = g.append("g").attr("class","deathCircle").selectAll("circle").data(data)
           .enter()
           .append("circle")
+          .attr("visibility","hidden")
          .attr("cx", function(d) {
                 return projection([+d.Latitude, +d.Longitude])[0];
             })
@@ -305,49 +311,36 @@ d3.json("world_all_withoutAntarctica.json",function(topo){
           .attr("r", function(d){ return radius(d.Death);})
           .sort(order)
           .on("mouseover",function(d){
-          d3.select(this).transition().duration(300).style('opacity',1).attr("fill","#fee391");
+                d3.select(this).transition().duration(300).style('opacity',1).attr("fill","#fee391");
+                div.transition().duration(300).style("opacity",1);
 
-          div.transition().duration(300)
-          .style("opacity",1);
-
-          div.html("<p>Year: " + d.Date + "<br>"+"Death: "+ d3.round(d.Death,0)+"<br>"+"Location: " + d.Location +"<br>"
-                +"Magnitude: "+ d.Magnitude +"<br>"
-                +"Comments: "+ d.Comments +"</p>")
-
-          .style("left",(d3.event.pageX)+"px")
-          .style("top",(d3.event.pageY+30) +"px");
+                div.html("<p>Year: " + d.Date + "<br>"+"Death: "+ d3.round(d.Death,0)+"<br>"+"Location: " + d.Location +"<br>"+"Magnitude: "+ d.Magnitude +"<br>"+"Comments: "+ d.Comments +"</p>")
+                .style("left",(d3.event.pageX)+"px")
+                .style("top",(d3.event.pageY+30) +"px");
           }).on("mouseout",function(){
-
                d3.select(this)
                   .transition()
                   .duration(300)
                   .style("opacity",1)
                   .attr("fill","red");
-
               div.transition()
                   .duration(300)
                   .style("opacity", 0);
-
           }).on("dblclick",clicked);
 
+          buttonset = svg.append("g").attr("class","buttonset");
 
-        var zoomX = 30,
-            zoomY = 0.1*height,
-            zoomWidth = 70,
-            zoomHeight = 20,
-            bdx = 5;
-
-          zoombutton = svg.append("g").append("rect")
+          zoombutton = buttonset.append("rect")
             .attr("x",zoomX)
             .attr("y",zoomY)
             .attr("width",zoomWidth)
             .attr("height",zoomHeight)
-            .attr("fill","#ffeda0")
+            .attr("fill","#D3D3D3")
             .attr("stroke-width",1.5)
             .attr("rx",8)
             .on("click",clickOut);
 
-          svg.append("text")
+             svg.append("text")
           .attr("x",zoomX+bdx)
           .attr("y",zoomY+zoomHeight*0.7)
           .attr("fill","black")
@@ -356,6 +349,35 @@ d3.json("world_all_withoutAntarctica.json",function(topo){
           .style("pointer-events",'none')
           .style("-webkit-user-select","none")
           .text("Zoom Out");
+
+           textYear = svg.append("text")
+            .attr("x",yearX)
+            .attr("y",yearY)
+            .classed("yearText text",true)
+            .text(startDate.getFullYear().toString())
+            .attr('visibility','hidden');
+
+          startbutton = buttonset.append("rect")
+            .attr("x",zoomX)
+            .attr("y",startY)
+            .attr("width",zoomWidth)
+            .attr("height",zoomHeight)
+            .attr("fill","#D3D3D3")
+            .attr("stroke-width",1.5)
+            .attr("rx",8)
+            .on("click",plotQuake);
+
+          svg.append("text")
+          .attr("x",zoomX+bdx+15)
+          .attr("y",startY+zoomHeight*0.7)
+          .attr("fill","black")
+          .attr("text-anchor","start")
+          .attr("font-size","13")
+          .style("pointer-events",'none')
+          .style("-webkit-user-select","none")
+          .text("Start");
+
+     //       
 
                 // Pace.stop() ;
         Pace.on("done", function() {
@@ -394,29 +416,6 @@ function clicked(d) {
     .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")scale(" + scaleFactor + ")translate(" + -x + "," + -y + ")")
     .style("stroke-width", 1.25 / scaleFactor + "px");
 
-    console.log(t);
-  console.log(scaleFactor);
-
- // var tx = t[0] * d3.event.scale + d3.event.translate[0];
- // var ty = t[1] * d3.event.scale + d3.event.translate[1];
- var tx = t[0]*scaleFactor;
- var ty = t[1]*scaleFactor;
-  projection.translate([tx, ty]);
-
-
-  // now we determine the projection's new scale, but there's a problem:
-  // the map doesn't 'zoom onto the mouse point'
-  projection.scale(s * d3.event.scale);
-
-  svg.selectAll(".subunit-label")[0].forEach(function(d){
-    var data = d3.select(d).data()[0];
-    d3.select(d).attr("transform",function(d){return "translate(" + path.centroid(d)+ ")";})
-         .attr("dy",".35em")
-         .style("opacity",function(d){
-              return path.area(d.geometry)*scaleFactor >400 ? 1:0;
-         }).attr("font-size","5px");
-  });
-
 };
 
 // Zoom out to the original view
@@ -433,6 +432,37 @@ function clickOut() {
     .style("stroke-width", 1.5 / scaleFactor + "px");
 }
 
+function type(d) {
+  d.happened = +timeFormat.parse(d.Date);
+ // d.Date= parseTime(d.Date);
+  d.Death = +d.Death;
+  return d;
+}
+
+function plotQuake() {
+  console.log("REACHED");
+   textYear.attr('visibility','visible');
+        var ii = -1 ;
+
+        quake.transition()
+            .duration(20000)
+            .ease("linear")
+            .attrTween("visibility",function(d, i, a){
+                return function(t) {
+                    if (ii !== t) {
+                        var cDate = new Date(dateInterp(t))
+                        textYear.text(cDate.getFullYear().toString()) ;
+                        ii = t ;
+                    };
+
+                    if (d.happened <= dateInterp(t)) {
+                        return "visible" ;
+                    } else {
+                        return "hidden" ;
+                    }
+                }
+            })
+}
 
 
 </script>
