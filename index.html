@@ -73,6 +73,17 @@ svg{
   font-size: 4px;
   text-anchor: middle;
 }
+#deathbutton{
+  pointer-events: all;
+  fill: red;
+  fill-opacity: 0.5;
+}
+
+#magnitudebutton{
+  fill: #cc8400;
+  pointer-events: all;
+  fill-opacity: 0.5;
+}
 
 .pace {
   -webkit-pointer-events: none;
@@ -165,7 +176,7 @@ var path, geoData, color, earthquakeData, projection;
 var timeFormat = d3.time.format("%m/%d/%Y");
 
 var startDate = new Date(1900,0),
-    endDate   = new Date(2014,12) ;
+    endDate   = new Date(2014,11) ;
 
 var startNum = +startDate,
     endNum = +endDate ;
@@ -179,10 +190,13 @@ var monthNames = [
         "November", "December"
     ];
 
-var zoomX = 30,
+var zoomX = 100,
     zoomY = 0.1*height,
     startY = zoomY +30,
-    yearX = 30,
+    endY = startY +30,
+    deathY = endY +30,
+    magnitudeY = deathY+30,
+    yearX = zoomX,
     yearY = 0.9*height,
     zoomWidth = 70,
     zoomHeight = 20,
@@ -235,7 +249,13 @@ d3.json("world_all_withoutAntarctica.json",function(topo){
       minDeath = deathData[0];
       maxDeath = deathData[deathData.length-1];
 
-      var radius = d3.scale.linear().domain([minDeath,maxDeath]).range([4,35]);
+      radiusDeath = d3.scale.linear().domain([minDeath,maxDeath]).range([3,40]);
+
+      magnitudeData = data.map(MAGNITUDE).sort(d3.ascending);
+      minMagnitude = magnitudeData[1];
+      maxMagnitude = magnitudeData[magnitudeData.length-1];
+
+      radiusMagnitude = d3.scale.linear().domain([minMagnitude,maxMagnitude]).range([3,15]);
 
      g = svg.append("g");
 
@@ -246,7 +266,7 @@ d3.json("world_all_withoutAntarctica.json",function(topo){
         .enter()
         .append("path")
         .attr("d", path)
-        .attr("fill", "white")
+        .attr("fill", "transparent")
         .attr("id",function(d) {
                   return d.id;})
         .attr("stroke","black")
@@ -260,11 +280,11 @@ d3.json("world_all_withoutAntarctica.json",function(topo){
          .append("text")
          .attr("transform",function(d){
             if (d.properties.name=="France"){
-                return "translate(" + (path.centroid(d)[0]+10)+","+(path.centroid(d)[1]-10) + ")";
+                return "translate(" + (path.centroid(d)[0]+18)+","+(path.centroid(d)[1]-20) + ")";
             }else if (d.properties.name=="United States"){
-                return "translate(" + (path.centroid(d)[0])+","+(path.centroid(d)[1]+20) + ")";
+                return "translate(" + (path.centroid(d)[0]+10)+","+(path.centroid(d)[1]+20) + ")";
             }else if (d.properties.name =="Canada"){
-                return "translate(" + (path.centroid(d)[0]-20)+","+(path.centroid(d)[1]+20) + ")";
+                return "translate(" + (path.centroid(d)[0]-30)+","+(path.centroid(d)[1]+10) + ")";
             }else{
                 return "translate(" + (path.centroid(d)[0])+","+(path.centroid(d)[1]) + ")";
             };
@@ -274,6 +294,7 @@ d3.json("world_all_withoutAntarctica.json",function(topo){
               return path.area(d.geometry)*scaleFactor >100 ? 1:0;
          })
          .text(function(d) {return d.properties.name;})
+         .attr("text-anchor","middle")
          .style("font-size",function(d){
 
           areaData = topojson.feature(topo,topo.objects.countries).features.map(AREA).sort(d3.ascending);
@@ -291,7 +312,11 @@ d3.json("world_all_withoutAntarctica.json",function(topo){
 
       // Order to make sure the smallest is on the top
       function order(a,b){
-        return radius(a) - radius(b);
+        return radiusDeath(a) - radiusDeath(b);
+      };
+
+      function orderMagnitude(a,b){
+        return radiusMagnitude(a) - radiusMagnitude(b);
       };
 
          quake = g.append("g").attr("class","deathCircle").selectAll("circle").data(data)
@@ -308,7 +333,7 @@ d3.json("world_all_withoutAntarctica.json",function(topo){
           .style("fill-opacity", 0.5)
           .style("stroke", "red")
           .style("stroke-opacity", 0.5)
-          .attr("r", function(d){ return radius(d.Death);})
+          .attr("r", function(d){ return radiusDeath(d.Death);})
           .sort(order)
           .on("mouseover",function(d){
                 d3.select(this).transition().duration(300).style('opacity',1).attr("fill","#fee391");
@@ -338,7 +363,8 @@ d3.json("world_all_withoutAntarctica.json",function(topo){
             .attr("fill","#D3D3D3")
             .attr("stroke-width",1.5)
             .attr("rx",8)
-            .on("click",clickOut);
+            .on("click",clickOut)
+            .style("pointer-events","pointer");
 
              svg.append("text")
           .attr("x",zoomX+bdx)
@@ -365,7 +391,8 @@ d3.json("world_all_withoutAntarctica.json",function(topo){
             .attr("fill","#D3D3D3")
             .attr("stroke-width",1.5)
             .attr("rx",8)
-            .on("click",plotQuake);
+            .on("click",plotQuake)
+            .style("pointer-events","pointer");
 
           svg.append("text")
           .attr("x",zoomX+bdx+15)
@@ -377,7 +404,69 @@ d3.json("world_all_withoutAntarctica.json",function(topo){
           .style("-webkit-user-select","none")
           .text("Start");
 
-     //       
+          endbutton = buttonset.append("rect")
+            .attr("x",zoomX)
+            .attr("y",endY)
+            .attr("width",zoomWidth)
+            .attr("height",zoomHeight)
+            .attr("fill","#D3D3D3")
+            .attr("stroke-width",1.5)
+            .attr("rx",8)
+            .on("click",endplotQuake)
+            .style("pointer-events","pointer");
+
+          svg.append("text")
+          .attr("x",zoomX+bdx+15)
+          .attr("y",endY+zoomHeight*0.7)
+          .attr("fill","black")
+          .attr("text-anchor","start")
+          .attr("font-size","13")
+          .style("pointer-events",'none')
+          .style("-webkit-user-select","none")
+          .text("End");
+
+          deathbutton = buttonset.append("rect").attr("id","deathbutton")
+            .attr("x",zoomX)
+            .attr("y",deathY)
+            .attr("width",zoomWidth)
+            .attr("height",zoomHeight)
+            .attr("fill","#D3D3D3")
+            .attr("stroke-width",1.5)
+            .attr("rx",8)
+            .on("click",changetoDeath)
+            .style("pointer-events","pointer");
+
+          svg.append("text")
+          .attr("x",zoomX+bdx+15)
+          .attr("y",deathY+zoomHeight*0.7)
+          .attr("fill","black")
+          .attr("text-anchor","start")
+          .attr("font-size","13")
+          .style("pointer-events",'none')
+          .style("-webkit-user-select","none")
+          .text("Death");
+
+          magnitudebutton = buttonset.append("rect").attr("id","magnitudebutton")
+            .attr("x",zoomX)
+            .attr("y",magnitudeY)
+            .attr("width",zoomWidth)
+            .attr("height",zoomHeight)
+            .attr("fill","#D3D3D3")
+            .attr("stroke-width",1.5)
+            .attr("rx",8)
+            .on("click",changetoMagnitude)
+            .style("pointer-events","pointer");
+
+          svg.append("text")
+          .attr("x",zoomX+bdx)
+          .attr("y",magnitudeY+zoomHeight*0.7)
+          .attr("fill","black")
+          .attr("text-anchor","start")
+          .attr("font-size","13")
+          .style("pointer-events",'none')
+          .style("-webkit-user-select","none")
+          .text("Magnitude");
+
 
                 // Pace.stop() ;
         Pace.on("done", function() {
@@ -388,6 +477,7 @@ d3.json("world_all_withoutAntarctica.json",function(topo){
 });
 
 function DEATH(d) {return +d.Death;};
+function MAGNITUDE(d) {return +d.Magnitude;};
 
 function AREA(d){return +path.area(d.geometry);}
 
@@ -440,7 +530,7 @@ function type(d) {
 }
 
 function plotQuake() {
-  console.log("REACHED");
+
    textYear.attr('visibility','visible');
         var ii = -1 ;
 
@@ -462,7 +552,41 @@ function plotQuake() {
                     }
                 }
             })
+};
+
+function endplotQuake(){
+  textYear.attr('visibility','hidden');
+  quake.transition().duration(300).ease("linear").attr("visibility","visible");
+};
+
+function changetoMagnitude(){
+
+      function orderMagnitude(a,b){
+        return radiusMagnitude(a) - radiusMagnitude(b);
+      };
+    quake.transition()
+    .sort(orderMagnitude)
+    .attr("r",function(d){ return radiusMagnitude(d.Magnitude);})
+    .style("fill", "#cc8400")
+    .style("fill-opacity", 0.5)
+    .style("stroke", "#cc8400")
+    .style("stroke-opacity", 0.5)
+    .attr("visibility","visible");
 }
 
+function changetoDeath(){
+
+   function order(a,b){
+        return radiusDeath(a) - radiusDeath(b);
+      };
+    quake.transition()
+    .sort(order)
+    .attr("r",function(d){ return radiusDeath(d.Death);})
+    .style("fill", "red")
+    .style("fill-opacity", 0.5)
+    .style("stroke", "red")
+    .style("stroke-opacity", 0.5)
+    .attr("visibility","visible");
+}
 
 </script>
