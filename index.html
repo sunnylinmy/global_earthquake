@@ -153,6 +153,7 @@ svg{
 <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/1.6.19/topojson.min.js"></script>
 <script src="lib/d3.geo.projection.v0.min.js" charset="utf-8"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.0.2/pace.min.js"></script>
+<script src="lib/jquery-1.12.0.min.js"></script>
 <svg></svg>
 <p id="instruction">Instruction: Double click countries on the map to zoom in. Click "Zoom Out" to zoom out. Click "Start" and "End" to see the change in time. Use "Death" and "Magnitude" to toggle the different measures. Hover on circle to see the description of every earthquake.</p>
 <script>
@@ -384,7 +385,7 @@ d3.json("world_all_withoutAntarctica.json",function(topo){
           .style("-webkit-user-select","none")
           .text("Zoom Out");
 
-           textYear = svg.append("text")
+           textYear = svg.append("text").attr("id","textYear")
             .attr("x",yearX)
             .attr("y",yearY)
             .classed("yearText text",true)
@@ -573,14 +574,32 @@ function changetoMagnitude(){
       function orderMagnitude(a,b){
         return radiusMagnitude(a) - radiusMagnitude(b);
       };
-    quake.transition()
-    .sort(orderMagnitude)
-    .attr("r",function(d){ return radiusMagnitude(d.Magnitude);})
-    .style("fill", "#cc8400")
-    .style("fill-opacity", 0.5)
-    .style("stroke", "#cc8400")
-    .style("stroke-opacity", 0.5)
-    .attr("visibility","visible");
+
+        quake.transition()
+        .sort(orderMagnitude)
+        .attr("r",function(d){ return radiusMagnitude(d.Magnitude);})
+        .style("fill", "#cc8400")
+        .style("fill-opacity", 0.5)
+        .style("stroke", "#cc8400")
+        .style("stroke-opacity", 0.5);
+
+    var x = document.getElementById("textYear").textContent;
+    if (x>1900 && x<=2014){
+       quake
+    .attrTween("visibility",function(d, i, a){
+                return function(t) {
+                    if (d.happened <= dateInterp(t)) {
+                        return "visible" ;
+                    } else {
+                        return "hidden" ;
+                    }
+                }
+            });    
+    }else{
+    quake
+        .attr("visibility","visible");
+    };
+
 }
 
 function changetoDeath(){
@@ -588,14 +607,33 @@ function changetoDeath(){
    function order(a,b){
         return radiusDeath(a) - radiusDeath(b);
       };
-    quake.transition()
+
+      quake.transition()
     .sort(order)
     .attr("r",function(d){ return radiusDeath(d.Death);})
     .style("fill", "red")
     .style("fill-opacity", 0.5)
     .style("stroke", "red")
-    .style("stroke-opacity", 0.5)
+    .style("stroke-opacity", 0.5);
+
+   var y = document.getElementById("textYear").textContent;
+    if (y>1900 && y<=2014){
+    quake
+    .attrTween("visibility",function(d, i, a){
+                return function(t) {
+                    if (d.happened <= dateInterp(t)) {
+                        return "visible" ;
+                    } else {
+                        return "hidden" ;
+                    }
+                }
+            });
+
+    }else{
+     quake  
     .attr("visibility","visible");
+    };
+   
 }
 
 </script>
