@@ -155,7 +155,7 @@ svg{
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.0.2/pace.min.js"></script>
 <script src="lib/jquery-1.12.0.min.js"></script>
 <svg></svg>
-<p id="instruction">Instruction: Double click countries on the map to zoom in. Click "Zoom Out" to zoom out. Click "Start" and "End" to see the change in time. Use "Death" and "Magnitude" to toggle the different measures. Hover on circle to see the description of every earthquake.<br>
+<p id="instruction">Instruction: Double click countries on the map to zoom in. Click "Zoom Out" to zoom out. Click "Start" and "End" to see the change in time. Use "Deaths" and "Magnitude" to toggle the different measures. Hover on circle to see the description of every earthquake.<br>
 Data Source: <a href="http://earthquake.usgs.gov/earthquakes/world/world_deaths.php">USGS - Earthquake Hazards Program</a></p>
 <script>
 // To get a d3 data visualization job, you have to show them you really know something about d3.
@@ -454,7 +454,7 @@ d3.json("world_all_withoutAntarctica.json",function(topo){
           .attr("font-size","13")
           .style("pointer-events",'none')
           .style("-webkit-user-select","none")
-          .text("Death");
+          .text("Deaths");
 
           magnitudebutton = buttonset.append("rect").attr("id","magnitudebutton")
             .attr("x",zoomX)
