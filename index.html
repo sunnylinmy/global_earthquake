@@ -85,6 +85,12 @@ svg{
   fill-opacity: 0.5;
 }
 
+#instruction{
+  width: 1500px;
+  margin: auto;
+  display: block;
+}
+
 .pace {
   -webkit-pointer-events: none;
   pointer-events: none;
@@ -147,23 +153,25 @@ svg{
 <script src="https://cdnjs.cloudflare.com/ajax/libs/topojson/1.6.19/topojson.min.js"></script>
 <script src="lib/d3.geo.projection.v0.min.js" charset="utf-8"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.0.2/pace.min.js"></script>
+<svg></svg>
+<p id="instruction">Instruction: Double click countries on the map to zoom in. Click "Zoom Out" to zoom out. Click "Start" and "End" to see the change in time. Use "Death" and "Magnitude" to toggle the different measures. Hover on circle to see the description of every earthquake.</p>
 <script>
 // To get a d3 data visualization job, you have to show them you really know something about d3.
-var width = 1000*1.5,
-    height = 500*1.4;
+var width = 1500,
+    height = 700;
 
 var scaleFactor = 1,
     centered,
     g,
     zoombutton;
 
-var svg = d3.select("body")
-    .append("svg")
+var svg = d3.select("svg")
     .attr("width", width)
     .attr("height", height)
     .attr("visibility","hidden")
     .attr("id","mainsvg");
 
+d3.select("#instruction").attr("visibility","hidden");
 
 var div = d3.select("body").append("div")   
   .attr("class", "tooltip")               
@@ -255,7 +263,7 @@ d3.json("world_all_withoutAntarctica.json",function(topo){
       minMagnitude = magnitudeData[1];
       maxMagnitude = magnitudeData[magnitudeData.length-1];
 
-      radiusMagnitude = d3.scale.linear().domain([minMagnitude,maxMagnitude]).range([3,15]);
+      radiusMagnitude = d3.scale.linear().domain([minMagnitude,maxMagnitude]).range([2,20]);
 
      g = svg.append("g");
 
@@ -471,6 +479,7 @@ d3.json("world_all_withoutAntarctica.json",function(topo){
                 // Pace.stop() ;
         Pace.on("done", function() {
           svg.attr("visibility","visible") ;
+          d3.select("#instruction").attr("visibility","visible");
         })
          
     });
@@ -590,3 +599,4 @@ function changetoDeath(){
 }
 
 </script>
+</body>
